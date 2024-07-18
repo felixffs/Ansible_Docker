@@ -1,0 +1,83 @@
+---
+- name: Setup Ubuntu VM
+  hosts: ubuntu01
+  become: yes
+
+  tasks:
+    - name: Update and upgrade all packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Set timezone to Europe/Berlin
+      timezone:
+        name: Europe/Berlin
+
+    - name: Install NTP
+      apt:
+        name: ntp
+        state: present
+
+    - name: Configure NTP server to time.google.com
+      lineinfile:
+        path: /etc/ntp.conf
+        regexp: '^server'
+        line: 'server time.google.com'
+        state: present
+      notify: Restart ntp
+
+    - name: Disable IPv6 via GRUB
+      lineinfile:
+        path: /etc/default/grub
+        regexp: '^GRUB_CMDLINE_LINUX_DEFAULT'
+        line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash ipv6.disable=1"'
+        state: present
+      notify: Update grub
+
+    - name: Update GRUB
+      command: update-grub
+      notify: Reboot system
+
+    - name: Install Fail2ban
+      apt:
+        name: fail2ban
+        state: present
+
+    - name: Configure Fail2ban for SSH
+      copy:
+        content: |
+          [sshd]
+          enabled = true
+          port = ssh
+          logpath = /var/log/auth.log
+          maxretry = 3
+        dest: /etc/fail2ban/jail.d/sshd.local
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart fail2ban
+
+    - name: Reboot system at the end
+      reboot:
+        msg: "Reboot initiated by Ansible after configuration changes."
+        connect_timeout: 5
+        reboot_timeout: 600
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
+
+  handlers:
+    - name: Restart ntp
+      service:
+        name: ntp
+        state: restarted
+
+    - name: Update grub
+      command: update-grub
+
+    - name: Reboot system
+      reboot:
+
+    - name: Restart fail2ban
+      service:
+        name: fail2ban
+        state: restarted

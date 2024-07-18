@@ -1,0 +1,19 @@
+- name: Configure timesyncd and install NGINX on Ubuntu servers
+  hosts: ubuntu_servers
+  become: yes
+  tasks:
+    - name: Set timezone to Europe/Berlin
+      timezone:
+        name: Europe/Berlin
+
+    - name: Configure timesyncd to use Google's NTP servers
+      copy:
+        dest: /etc/systemd/timesyncd.conf
+        content: |
+          [Time]
+          NTP=time.google.com
+
+    - name: Restart systemd-timesyncd to apply new configuration
+      systemd:
+        name: systemd-timesyncd
+        state: restarted

@@ -1,0 +1,7 @@
+all:
+  children:
+    ubuntu_servers:
+      hosts:
+        ubuntu01:
+          ansible_host: 192.168.178.223
+          ansible_user: felix
