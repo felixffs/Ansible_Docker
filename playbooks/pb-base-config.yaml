@@ -1,6 +1,6 @@
 ---
 - name: Setup Ubuntu VM
-  hosts: ubuntu01
+  hosts: ubuntu
   become: yes
 
   tasks:
@@ -13,18 +13,13 @@
       timezone:
         name: Europe/Berlin
 
-    - name: Install NTP
-      apt:
-        name: ntp
-        state: present
-
-    - name: Configure NTP server to time.google.com
+    - name: Configure systemd-timesyncd NTP server
       lineinfile:
-        path: /etc/ntp.conf
-        regexp: '^server'
-        line: 'server time.google.com'
+        path: /etc/systemd/timesyncd.conf
+        regexp: '^#NTP='
+        line: 'NTP=google.de'
         state: present
-      notify: Restart ntp
+      notify: Restart systemd-timesyncd
 
     - name: Disable IPv6 via GRUB
       lineinfile:
@@ -66,9 +61,9 @@
         post_reboot_delay: 30
 
   handlers:
-    - name: Restart ntp
+    - name: Restart systemd-timesyncd
       service:
-        name: ntp
+        name: systemd-timesyncd
         state: restarted
 
     - name: Update grub
